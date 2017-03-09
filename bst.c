@@ -1,26 +1,12 @@
 /*** common binary search tree class ***/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "bst.h"
 #include "queue.h"
 
-/*typedef struct bstNode*/
-/*{*/
-/*struct bstNode *left;*/
-/*struct bstNode *right;*/
-/*struct bstNode *parent;*/
-/*void *value;*/
-/*} bstNode;*/
-
-/*typedef struct bst*/
-/*{*/
-/*bstNode *root;*/
-/*void (*display)(FILE *,void *);*/
-/*int (*compare)(void *,void *);*/
-/*} bst;*/
-
 bst *newBST(void (*d)(FILE *,void *),int (*c)(void *,void *)) {
-  bst *newTree = malloc(sizeof(bst)):
+  bst *newTree = malloc(sizeof(bst));
     if(newTree == 0) {
       fprintf(stderr, "out of memory");
       exit(-1);
@@ -33,16 +19,20 @@ bst *newBST(void (*d)(FILE *,void *),int (*c)(void *,void *)) {
 bstNode *insertBST(bst *tree,void *value) {
   bstNode *curnode = tree->root;
   bstNode *newnode = malloc(sizeof(bstNode));
+  if(newnode == 0) {
+      fprintf(stderr, "out of memory");
+      exit(-1);
+    }
   newnode->value = value;
   newnode->left = 0;
   newnode->right = 0;
   if(curnode == 0) {
-    newnode->parent = 0;
+    newnode->parent = newnode;
     tree->root = newnode;
   }
   else {
     while(1) {
-      if(newnode->value < curnode->value) {
+      if(tree->compare(newnode->value, curnode->value) <  0 ) {
         if(curnode->left == 0) {
           curnode->left = newnode;
           newnode->parent = curnode;
@@ -63,25 +53,23 @@ bstNode *insertBST(bst *tree,void *value) {
   return newnode;
 }
 
-}
-
 int findBST(bst *tree,void *value) {
-  bstNode curnode = tree->root;
+  bstNode *curnode = tree->root;
   if(curnode == 0) return 0;
   while(1) {
-    if(value == curnode->value) return 1;
-    else if (value < curnode->value) curnode = curnode->left;
+    if(tree->compare(value,curnode->value)==0)  return 1;
+    else if  (tree->compare(value,curnode->value) < 0) curnode = curnode->left;
     else curnode = curnode->right;
     if(curnode == 0) return 0;
   }
 }
 
 bstNode *findBSTNode(bst *tree,void *value) {
-  bstNode curnode == tree->root;
+  bstNode *curnode = tree->root;
   if(curnode == 0) return 0;
   while(1) {
-    if(value == curnode->value) return curnode;
-    else if (value < curnode->value) curnode = curnode->left;
+    if(tree->compare(value,curnode->value)==0) return curnode;
+    else if (tree->compare(value,curnode->value) < 0) curnode = curnode->left;
     else curnode = curnode->right;
     if(curnode == 0) return 0;
   }
@@ -108,7 +96,7 @@ bstNode *swapToLeafBSTNode(bstNode *n){
     temp = iter->value;
     iter->value = n->value;
     n->value = temp;
-    swapToLeafBSTNode(current);
+    swapToLeafBSTNode(iter);
   }
 }
 
@@ -134,8 +122,57 @@ void pruneBSTNode(bstNode *n) {
 }
 
 void statisticsBST(bst *tree,FILE *fp) {
-  queue *q = 
-  bstNode *iter = tree->root;
-extern void displayBST(FILE *fp,bst *tree);
-extern void checkBST(bst *tree);                //optional
-#endif
+  queue *q = newQueue(tree->display);
+  unsigned int lev = 0, maxdepth = 0, mindepth = 0;
+  unsigned char lowestLeaf = 1;
+  if(tree->root != 0) {
+      enqueue(q, tree->root);
+      while(sizeQueue(q)) {
+        lev++;
+        for(int i = 0, n = sizeQueue(q); i < n; i++) {
+            bstNode *iter = peekQueue(q);
+            if(lowestLeaf && (iter->left == 0 && iter->right == 0)) {
+                mindepth = lev;
+                lowestLeaf = 0;
+            }
+            dequeue(q);
+            if(iter->left  != 0)
+                enqueue(q, iter->left);
+            if(iter->right != 0)
+                enqueue(q, iter->right);
+        }
+      }
+      maxdepth = lev;
+    }
+      fprintf(fp, "Minimum depth: %u\n", mindepth);
+      fprintf(fp, "Maximum depth: %u\n", maxdepth);
+}
+void displayBST(FILE *fp,bst *tree) {
+    if(tree->root == 0) {
+        fprintf(fp, "0: \n");
+        return;
+    }
+    queue *q = newQueue(tree->display);
+    unsigned int lev = 0;
+    enqueue(q, tree->root);
+    while(sizeQueue(q)) {
+        fprintf(fp, "%u : ", lev);
+        lev++;
+        for(int i = 0, n = sizeQueue(q); i < n; i++) {
+            bstNode *iter = peekQueue(q);
+            if(iter->left == 0 && iter->right == 0) fprintf(fp, "=");
+            tree->display(fp, iter);
+            fprintf(fp, "(");
+            tree->display(fp, iter->parent);
+            fprintf(fp, ")-");
+            if(iter->parent->left == iter) fprintf(fp, "l");
+            else if(iter->parent->right == iter) fprintf(fp, "r");
+            dequeue(q);
+            if(iter->left  != 0)
+                enqueue(q, iter->left);
+            if(iter->right != 0)
+                enqueue(q, iter->right);
+        }
+        fprintf(fp, "\n");
+    }
+}

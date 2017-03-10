@@ -152,7 +152,7 @@ void displayBST(FILE *fp,bst *tree) {
     fprintf(fp, "0: \n");
     return;
   }
-  queue *q = newQueue(tree->display);
+  queue *q = newQueue(tree->value->display);
   unsigned int lev = 0;
   enqueue(q, tree->root);
   while(sizeQueue(q)) {
@@ -161,9 +161,9 @@ void displayBST(FILE *fp,bst *tree) {
     for(int i = 0, n = sizeQueue(q); i < n; i++) {
       bstNode *iter = peekQueue(q);
       if(iter->left == 0 && iter->right == 0) fprintf(fp, "=");
-      tree->display(fp, iter);
+      tree->value->display(fp, iter->value->value);
       fprintf(fp, "(");
-      tree->display(fp, iter->parent);
+      tree->value->display(fp, iter->parent->value->value);
       fprintf(fp, ")-");
       if(iter->parent->left == iter) fprintf(fp, "l");
       else if(iter->parent->right == iter) fprintf(fp, "r");

@@ -7,10 +7,10 @@
 
 bst *newBST(void (*d)(FILE *,void *),int (*c)(void *,void *)) {
   bst *newTree = malloc(sizeof(bst));
-    if(newTree == 0) {
-      fprintf(stderr, "out of memory");
-      exit(-1);
-    }
+  if(newTree == 0) {
+    fprintf(stderr, "out of memory");
+    exit(-1);
+  }
   newTree->root = 0;
   newTree->display = d;
   newTree->compare = c;
@@ -20,9 +20,9 @@ bstNode *insertBST(bst *tree,void *value) {
   bstNode *curnode = tree->root;
   bstNode *newnode = malloc(sizeof(bstNode));
   if(newnode == 0) {
-      fprintf(stderr, "out of memory");
-      exit(-1);
-    }
+    fprintf(stderr, "out of memory");
+    exit(-1);
+  }
   newnode->value = value;
   newnode->left = 0;
   newnode->right = 0;
@@ -126,53 +126,53 @@ void statisticsBST(bst *tree,FILE *fp) {
   unsigned int lev = 0, maxdepth = 0, mindepth = 0;
   unsigned char lowestLeaf = 1;
   if(tree->root != 0) {
-      enqueue(q, tree->root);
-      while(sizeQueue(q)) {
-        lev++;
-        for(int i = 0, n = sizeQueue(q); i < n; i++) {
-            bstNode *iter = peekQueue(q);
-            if(lowestLeaf && (iter->left == 0 && iter->right == 0)) {
-                mindepth = lev;
-                lowestLeaf = 0;
-            }
-            dequeue(q);
-            if(iter->left  != 0)
-                enqueue(q, iter->left);
-            if(iter->right != 0)
-                enqueue(q, iter->right);
-        }
-      }
-      maxdepth = lev;
-    }
-      fprintf(fp, "Minimum depth: %u\n", mindepth);
-      fprintf(fp, "Maximum depth: %u\n", maxdepth);
-}
-void displayBST(FILE *fp,bst *tree) {
-    if(tree->root == 0) {
-        fprintf(fp, "0: \n");
-        return;
-    }
-    queue *q = newQueue(tree->display);
-    unsigned int lev = 0;
     enqueue(q, tree->root);
     while(sizeQueue(q)) {
-        fprintf(fp, "%u : ", lev);
-        lev++;
-        for(int i = 0, n = sizeQueue(q); i < n; i++) {
-            bstNode *iter = peekQueue(q);
-            if(iter->left == 0 && iter->right == 0) fprintf(fp, "=");
-            tree->display(fp, iter);
-            fprintf(fp, "(");
-            tree->display(fp, iter->parent);
-            fprintf(fp, ")-");
-            if(iter->parent->left == iter) fprintf(fp, "l");
-            else if(iter->parent->right == iter) fprintf(fp, "r");
-            dequeue(q);
-            if(iter->left  != 0)
-                enqueue(q, iter->left);
-            if(iter->right != 0)
-                enqueue(q, iter->right);
+      lev++;
+      for(int i = 0, n = sizeQueue(q); i < n; i++) {
+        bstNode *iter = peekQueue(q);
+        if(lowestLeaf && (iter->left == 0 && iter->right == 0)) {
+          mindepth = lev;
+          lowestLeaf = 0;
         }
-        fprintf(fp, "\n");
+        dequeue(q);
+        if(iter->left  != 0)
+          enqueue(q, iter->left);
+        if(iter->right != 0)
+          enqueue(q, iter->right);
+      }
     }
+    maxdepth = lev;
+  }
+  fprintf(fp, "Minimum depth: %u\n", mindepth);
+  fprintf(fp, "Maximum depth: %u\n", maxdepth);
+}
+void displayBST(FILE *fp,bst *tree) {
+  if(tree->root == 0) {
+    fprintf(fp, "0: \n");
+    return;
+  }
+  queue *q = newQueue(tree->display);
+  unsigned int lev = 0;
+  enqueue(q, tree->root);
+  while(sizeQueue(q)) {
+    fprintf(fp, "%u : ", lev);
+    lev++;
+    for(int i = 0, n = sizeQueue(q); i < n; i++) {
+      bstNode *iter = peekQueue(q);
+      if(iter->left == 0 && iter->right == 0) fprintf(fp, "=");
+      tree->display(fp, iter);
+      fprintf(fp, "(");
+      tree->display(fp, iter->parent);
+      fprintf(fp, ")-");
+      if(iter->parent->left == iter) fprintf(fp, "l");
+      else if(iter->parent->right == iter) fprintf(fp, "r");
+      dequeue(q);
+      if(iter->left  != 0)
+        enqueue(q, iter->left);
+      if(iter->right != 0)
+        enqueue(q, iter->right);
+    }
+    fprintf(fp, "\n");
+  }
 }

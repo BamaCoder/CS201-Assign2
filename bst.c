@@ -14,6 +14,7 @@ bst *newBST(void (*d)(FILE *,void *),int (*c)(void *,void *)) {
   newTree->root = 0;
   newTree->display = d;
   newTree->compare = c;
+  return newTree;
 }
 
 bstNode *insertBST(bst *tree,void *value) {
@@ -26,7 +27,7 @@ bstNode *insertBST(bst *tree,void *value) {
   newnode->value = value;
   newnode->left = 0;
   newnode->right = 0;
-  if(curnode == 0) {
+  if(tree->root == 0) {
     newnode->parent = newnode;
     tree->root = newnode;
   }
@@ -57,7 +58,7 @@ int findBST(bst *tree,void *value) {
   bstNode *curnode = tree->root;
   if(curnode == 0) return 0;
   while(1) {
-    if(tree->compare(value,curnode->value)==0)  return 1;
+    if(tree->compare(value,curnode->value) == 0)  return 1;
     else if  (tree->compare(value,curnode->value) < 0) curnode = curnode->left;
     else curnode = curnode->right;
     if(curnode == 0) return 0;
@@ -87,7 +88,7 @@ bstNode *swapToLeafBSTNode(bstNode *n){
     temp = iter->value;
     iter->value = n->value;
     n->value = temp;
-    swapToLeafBSTNode(iter);
+    return swapToLeafBSTNode(iter);
   }
   else {
     iter = n->right;
@@ -96,7 +97,7 @@ bstNode *swapToLeafBSTNode(bstNode *n){
     temp = iter->value;
     iter->value = n->value;
     n->value = temp;
-    swapToLeafBSTNode(iter);
+    return swapToLeafBSTNode(iter);
   }
 }
 
@@ -147,32 +148,35 @@ void statisticsBST(bst *tree,FILE *fp) {
   fprintf(fp, "Minimum depth: %u\n", mindepth);
   fprintf(fp, "Maximum depth: %u\n", maxdepth);
 }
+
 void displayBST(FILE *fp,bst *tree) {
   if(tree->root == 0) {
     fprintf(fp, "0: \n");
     return;
   }
-  queue *q = newQueue(tree->value->display);
-  unsigned int lev = 0;
+  queue *q = newQueue(tree->display);
+  int lev = 0;
   enqueue(q, tree->root);
-  while(sizeQueue(q)) {
-    fprintf(fp, "%u : ", lev);
+  while(sizeQueue(q) > 0) {
+    fprintf(stdout, "%d : ", lev);
     lev++;
-    for(int i = 0, n = sizeQueue(q); i < n; i++) {
+    int n;
+    n = sizeQueue(q);
+    for(int i = 0; i < n; i++) {
       bstNode *iter = peekQueue(q);
       if(iter->left == 0 && iter->right == 0) fprintf(fp, "=");
-      tree->value->display(fp, iter->value->value);
-      fprintf(fp, "(");
-      tree->value->display(fp, iter->parent->value->value);
-      fprintf(fp, ")-");
-      if(iter->parent->left == iter) fprintf(fp, "l");
-      else if(iter->parent->right == iter) fprintf(fp, "r");
+      tree->display(stdout, iter->value);
+      fprintf(stdout, "(");
+      tree->display(stdout, iter->parent->value);
+      fprintf(stdout, ")-");
+      if(iter->parent->left == iter) fprintf(stdout, "l");
+      else if(iter->parent->right == iter) fprintf(stdout, "r");
       dequeue(q);
       if(iter->left  != 0)
         enqueue(q, iter->left);
       if(iter->right != 0)
         enqueue(q, iter->right);
     }
-    fprintf(fp, "\n");
+    fprintf(stdout, "\n");
   }
 }

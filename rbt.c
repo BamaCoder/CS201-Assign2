@@ -1,8 +1,9 @@
 /*** red-black binary search tree class ***/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "bst.h"
-#include "rbst.h"
+#include "rbt.h"
 
 /*typedef struct rbt*/
 /*{*/
@@ -13,128 +14,69 @@
 /*int words;*/
 /*} rbt;*/
 
-struct rbtval {
+typedef struct rbtval {
   void* value;
   void (*display)(FILE*,void*);
+  int (*compare)(void*,void*);
   int freq;
   unsigned char color;
 } rbtval;
 
-rbt *newRBT(void (*d)(FILE *,void *),int (*c)(void *,void *)) {
-  rbt *newRBT = malloc(sizeof(rbt));
-  if(tree == 0) {
-    fprintf(stderr, "out of memory");
-    exit(-1);
-  }
-  newRBT->tree = newBST(displayRBT,c);
-  newRBT->display = d;
-  newRBT->compare = c;
-  newRBT->words = 0;
-  newRBT->size = 0;
-}
-void insertRBT(rbt *rbTree,void *value) {
-  rbtval *val = malloc(sizeof(rbtval));
-  if(val == 0) {
-    fprintf(stderr, "out of memory");
-    exit(-1);
-  }
-  val->value = value;
-  val->display = d;
-  val->color = 'r';
-  val->freq = 1;
 
-  bstNode *newNode = insertBST(rbTree->tree, val);
-  while(1) {
-    if(newNode == rbTree->tree->root) break;
-    if(color(newNode->parent) == 'b') break;
-    if(color(uncle(newNode)) == 'r') {
-      newNode->parent->value->color = 'b';
-      uncle(newNode)->value->color = 'b';
-      grandparent(newNode)->value->color ='r';
-      newNode = grandparent(newNode);
-    }
-    else {
-      if(uncle(newNode) != 0) {
-        bstNode *padre = newNode->parent;
-        if(isleftChild(newNode)) {
-          if(newNode->parent == rbTree->tree->root) {
-            newNode->parent = newNode;
-            rbTree->tree->root = newNode;
-          }
-          else newNode->parent = newNode->parent->parent;
-          newNode->right = padre;
-          padre->left = newNode->right;
-          padre->parent = newNode;
-        }
-        else {
-          if(newNode->parent == rbTree->tree->root) {
-            newNode->parent = newNode;
-            rbTree->tree->root = newNode;
-          }
-          else newNode->parent = newNode->parent->parent;
-          newNode->left = padre;
-          padre->right = newNode->left;
-          padre->parent = newNode;
-        }
-        newNode->value->color = 'b';
-        newNode->parent->value->color = 'r';
-        padre = newNode->parent;
-        if(isleftChild(newNode)) {
-          if(newNode->parent == rbTree->tree->root) {
-            newNode->parent = newNode;
-            rbTree->tree->root = newNode;
-          }
-          else newNode->parent = newNode->parent->parent;
-          newNode->right = padre;
-          padre->left = newNode->right;
-          padre->parent = newNode;
-        }
-        else {
-          if(newNode->parent == rbTree->tree->root) {
-            newNode->parent = newNode;
-            rbTree->tree->root = newNode;
-          }
-          else newNode->parent = newNode->parent->parent;
-          newNode->left = padre;
-          padre->right = newNode->left;
-          padre->parent = newNode;
-        }
-        break;
-      }
-    }
-    rbTree->tree->root->value->color = 'b';
-  }
-}
-
-int findRBT(rbt *rbTree,void *val) {
-  return findBST(rbTree->tree, val);
-
-void deleteRBT(rbt *,void *) return;
-
-int sizeRBT(rbt *rbTree) {
-  return rbTree->size;
-}
-
-int wordsRBT(rbt *rbTree) {
-  return rbTree->words;
-}
-
-void statisticsRBT(rbt *rbtTree,FILE *fp) {
-  fprintf(fp, "Words/Phrases: %d\n", wordsRBT(rbTree));
-  fprintf(fp, "Nodes: %d\n", sizeRBT(rbTree));
-  statisticsBST(rbtTree->tree,fp);
-}
-
-void displayRBT(FILE *fp,rbt *rbtTree) {
-  displayBST(fp, rbtTree->tree);
-}
-
-inline bstNode *grandparent(bstNode *x) {
+bstNode *grandparent(bstNode *x) {
   return x->parent->parent;
 }
 
-inline int isleftChild(bstNode *x) {
+int isleftChild(bstNode *x) {
   return (x == x->parent->left);
+}
+
+int isLinear(bstNode *x) {
+    if(isleftChild(x) && isleftChild(x->parent)) return 1;
+    else if(!isleftChild(x) && !isleftChild(x->parent)) return 1;
+    else return 0;
+}
+
+void rightRotate(rbt *rbTree, bstNode *child, bstNode *parent) {
+    parent->left = child->right;
+    if(child->right != 0)
+        child->right->parent = parent;
+    child->right = parent;
+    if(parent == rbTree->tree->root) {
+        child->parent = child;
+        rbTree->tree->root = child;
+        parent->parent = child;
+    }
+    else {
+        child->parent = parent->parent;
+        if(!isleftChild(parent))
+            child->parent->left = child;
+        else
+            child->parent->right = child;
+        parent->parent = child;
+    }
+}
+
+void leftRotate(rbt *rbTree, bstNode *child, bstNode *parent) {
+    parent->right = child->left;
+    if(child->left != 0)
+        child->left->parent = parent;
+    child->left = parent;
+    if(parent == rbTree->tree->root) {
+        child->parent = child;
+        rbTree->tree->root = child;
+        parent->parent = child;
+    }
+    else {
+        child->parent = parent->parent;
+        if(isleftChild(parent))
+            child->parent->left = child;
+        else
+            child->parent->right = child;
+        parent->parent = child;
+    }
+}
+
 
 bstNode *uncle(bstNode *x) {
   if(x == x->parent->left)
@@ -145,7 +87,117 @@ bstNode *uncle(bstNode *x) {
 
 unsigned char color(bstNode *x) {
   if(x == 0)
-    return 'b';
+    return 'B';
   else
-    return x->value->color;
+    return ((rbtval*)x->value)->color;
 }
+
+void displayRBTVal(FILE * fp, void *value) {
+    rbtval *v = value;
+    v->display(fp, v->value);
+    if(v->freq > 1) fprintf(fp, "-%d", v->freq);
+    fprintf(fp, "-%c", v->color);
+}
+
+int compareRBTVal(void *a, void *b) {
+    rbtval *first = a;
+    rbtval *second = b;
+    return first->compare(first->value,second->value);
+}
+
+rbtval *newRBTVal(void (*d)(FILE *, void*), int(*c)(void*, void*)) {
+    rbtval *nodeval = malloc(sizeof(rbtval));
+    if(nodeval == 0) {
+        fprintf(stderr, "out of memory");
+        exit(-1);
+    }
+    nodeval->display = d;
+    nodeval->compare = c;
+    nodeval->color = 'B';
+    nodeval->freq = 1;
+    return nodeval;
+}
+
+rbt *newRBT(void (*d)(FILE *,void *),int (*c)(void *,void *)) {
+  rbt *newTree = malloc(sizeof(rbt));
+  if(newTree == 0) {
+    fprintf(stderr, "out of memory");
+    exit(-1);
+  }
+  newTree->tree = newBST(displayRBTVal, compareRBTVal);
+  newTree->display = d;
+  newTree->compare = c;
+  newTree->words = 0;
+  newTree->size = 0;
+  return newTree;
+}
+
+void insertRBT(rbt *rbTree,void *value) {
+  rbtval* val = newRBTVal(rbTree->display, rbTree->compare);
+  val->value = value;
+  bstNode* findval = findBSTNode(rbTree->tree, val);
+  if(findval != 0) {
+    ((rbtval*)findval->value)->freq++;
+    rbTree->words++;
+    return;
+  }
+  val->color = 'R';
+  bstNode *newNode = insertBST(rbTree->tree, val);
+  rbTree->size++;
+  rbTree->words++;
+
+  while(1) {
+    if(newNode == rbTree->tree->root) break;
+    if(color(newNode->parent) == 'B') break;
+    if(color(uncle(newNode)) == 'R') {
+      ((rbtval*)newNode->parent->value)->color = 'B';
+      ((rbtval*)uncle(newNode)->value)->color = 'B';
+      ((rbtval*)grandparent(newNode)->value)->color ='R';
+      newNode = grandparent(newNode);
+    }
+    else {
+      if(isLinear(newNode) == 0) {
+        bstNode *oldnode = newNode;
+        bstNode *oldparent = newNode->parent;
+        if(isleftChild(newNode)) rightRotate(rbTree, newNode, newNode->parent);
+        else leftRotate(rbTree, newNode, newNode->parent);
+        newNode = oldparent;
+        newNode->parent = oldnode;
+      }
+      ((rbtval*)newNode->parent->value)->color = 'B';
+      ((rbtval*)(grandparent(newNode))->value)->color = 'R';
+      if(newNode->parent == rbTree->tree->root) break;
+      if(isleftChild(newNode->parent)) rightRotate(rbTree,newNode->parent,newNode->parent->parent);
+      else leftRotate(rbTree, newNode->parent, newNode->parent->parent);
+      break;
+    }
+    ((rbtval*)(rbTree->tree->root->value))->color = 'B';
+  }
+}
+
+int findRBT(rbt *rbTree,void *val) {
+  bstNode *tmp = findBSTNode(rbTree->tree, val);
+  if(tmp != 0) return ((rbtval*)tmp->value)->freq;
+  else return 0;
+}
+
+void deleteRBT(rbt *tree,void *a) {return;}
+
+int sizeRBT(rbt *rbTree) {
+  return rbTree->size;
+}
+
+int wordsRBT(rbt *rbTree) {
+  return rbTree->words;
+}
+
+void statisticsRBT(rbt *rbtTree,FILE *fp) {
+  fprintf(fp, "Words/Phrases: %d\n", wordsRBT(rbtTree));
+  fprintf(fp, "Nodes: %d\n", sizeRBT(rbtTree));
+  statisticsBST(rbtTree->tree,fp);
+}
+
+void displayRBT(FILE *fp,rbt *rbtTree) {
+  displayBST(fp, rbtTree->tree);
+}
+

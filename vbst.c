@@ -26,7 +26,6 @@ void displayVBSTVal(FILE * fp, void *value) {
     vbstval *v = value;
     v->display(fp, v->value);
     if(v->freq > 1) fprintf(fp, "-%d", v->freq);
-    fprintf(fp, "-%c", v->color);
 }
 
 int compareVBSTVal(void *a, void *b) {
@@ -63,22 +62,40 @@ vbst *newVBST(void (*d)(FILE *,void *),int (*c)(void *,void *)) {
 }
 
 void insertVBST(vbst *vbstree,void *value) {
-
   vbstval* val = newVBSTVal(vbstree->display, vbstree->compare);
   val->value = value;
   bstNode *findval = findBSTNode(vbstree->tree, val);
   if(findval != 0) {
     ((vbstval*)findval->value)->freq++;
+    vbstree->words++;
     return;
   }
-  bstNode *newNode = insertBST(vbstree->tree, val);
+  else {
+    bstNode* newNode = insertBST(vbstree->tree, val);
+    vbstree->words++;
+    vbstree->size++;
+  }
 }
 
 int findVBST(vbst *vbstree,void *val) {
-  return findBST(vbstree->tree, val);
+  bstNode *tmp = findBSTNode(vbstree->tree, val);
+  if(tmp != 0) return ((vbstval*)tmp->value)->freq;
+  else return 0;
 }
 
-void deleteVBST(vbst *tree,void *a) {return;}
+void deleteVBST(vbst *tree,void *a) {
+    bstNode* findval = findBSTNode(tree->tree, a);
+    if(findval != 0) {
+        if(((vbstval*)findval->value)->freq > 1) {
+           ((vbstval*)findval->value)->freq--;
+        }
+        findval = swapToLeafBSTNode(findval);
+        pruneBSTNode(tree->tree, findval);
+    }
+    else {
+        return;
+    }
+}
 
 int sizeVBST(vbst *vbstree) {
   return vbstree->size;

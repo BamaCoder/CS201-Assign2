@@ -22,6 +22,12 @@ typedef struct rbtval {
   unsigned char color;
 } rbtval;
 
+void displayRBTVal(FILE * fp, void *value) {
+    rbtval *v = value;
+    v->display(fp, v->value);
+    if(v->freq > 1) fprintf(fp, "-%d", v->freq);
+    fprintf(fp, "-%c", v->color);
+}
 
 bstNode *grandparent(bstNode *x) {
   return x->parent->parent;
@@ -38,48 +44,67 @@ int isLinear(bstNode *x) {
 }
 
 void rightRotate(rbt *rbTree, bstNode *child, bstNode *parent) {
+    //printf("Rotating right: \n");
+     /*displayRBTVal(stdout, child->value);*/
+    //printf(" to ");
+    /*displayRBTVal(stdout, parent->value);*/
+    //printf("\n");
     parent->left = child->right;
-    if(child->right != 0)
-        child->right->parent = parent;
-    child->right = parent;
-    if(parent == rbTree->tree->root) {
+    if(child->right != 0) child->right->parent = parent;
+    if(parent != rbTree->tree->root) child->parent = parent->parent;
+    else {
         child->parent = child;
         rbTree->tree->root = child;
-        parent->parent = child;
+        parent->parent =child;
+    }
+    if(isleftChild(parent)) {
+        if(parent->parent != child) {
+            parent->parent->left = child;
+            parent->parent = child;
+        }
     }
     else {
-        child->parent = parent->parent;
-        if(!isleftChild(parent))
-            child->parent->left = child;
-        else
-            child->parent->right = child;
-        parent->parent = child;
+        if(parent->parent != child) {
+            parent->parent->right = child;
+        }
     }
+    child->right = parent;
 }
 
 void leftRotate(rbt *rbTree, bstNode *child, bstNode *parent) {
+    //printf("Rotating left: \n");
+    /*displayRBTVal(stdout, child->value);*/
+    //printf(" to ");
+    /*displayRBTVal(stdout, parent->value);*/
+    //printf("\n");
     parent->right = child->left;
-    if(child->left != 0)
-        child->left->parent = parent;
-    child->left = parent;
-    if(parent == rbTree->tree->root) {
+    if(child->left != 0) child->left->parent = parent;
+    if(parent != rbTree->tree->root) {
+        child->parent = parent->parent;
+    }
+    else {
         child->parent = child;
         rbTree->tree->root = child;
         parent->parent = child;
     }
-    else {
-        child->parent = parent->parent;
-        if(isleftChild(parent))
-            child->parent->left = child;
-        else
-            child->parent->right = child;
-        parent->parent = child;
+    if(isleftChild(parent)) {
+        if(parent->parent != child) {
+            parent->parent->left = child;
+            parent->parent = child;
+        }
     }
+    else {
+        if(parent->parent != child) {
+            parent->parent->right = child;
+            parent->parent = child;
+        }
+    }
+    child->left = parent;
 }
 
 
 bstNode *uncle(bstNode *x) {
-  if(x == x->parent->left)
+  if(isleftChild(x->parent))
     return grandparent(x)->right;
   else
     return grandparent(x)->left;
@@ -92,12 +117,6 @@ unsigned char color(bstNode *x) {
     return ((rbtval*)x->value)->color;
 }
 
-void displayRBTVal(FILE * fp, void *value) {
-    rbtval *v = value;
-    v->display(fp, v->value);
-    if(v->freq > 1) fprintf(fp, "-%d", v->freq);
-    fprintf(fp, "-%c", v->color);
-}
 
 int compareRBTVal(void *a, void *b) {
     rbtval *first = a;
@@ -137,41 +156,51 @@ void insertRBT(rbt *rbTree,void *value) {
   val->value = value;
   bstNode* findval = findBSTNode(rbTree->tree, val);
   if(findval != 0) {
+//    fprintf(stdout, "\n String %s found. Increasing Freq \n", (char*)((rbtval*)findval->value)->value);
     ((rbtval*)findval->value)->freq++;
     rbTree->words++;
     return;
   }
-  val->color = 'R';
-  bstNode *newNode = insertBST(rbTree->tree, val);
-  rbTree->size++;
-  rbTree->words++;
-
-  while(1) {
-    if(newNode == rbTree->tree->root) break;
-    if(color(newNode->parent) == 'B') break;
-    if(color(uncle(newNode)) == 'R') {
-      ((rbtval*)newNode->parent->value)->color = 'B';
-      ((rbtval*)uncle(newNode)->value)->color = 'B';
-      ((rbtval*)grandparent(newNode)->value)->color ='R';
-      newNode = grandparent(newNode);
-    }
-    else {
-      if(isLinear(newNode) == 0) {
-        bstNode *oldnode = newNode;
-        bstNode *oldparent = newNode->parent;
-        if(isleftChild(newNode)) rightRotate(rbTree, newNode, newNode->parent);
-        else leftRotate(rbTree, newNode, newNode->parent);
-        newNode = oldparent;
-        newNode->parent = oldnode;
+  else {
+      val->color = 'R';
+      bstNode *newNode = insertBST(rbTree->tree, val);
+      rbTree->size++;
+      rbTree->words++;
+      while(1) {
+        bstNode *parental = newNode->parent;
+        bstNode *uncs = uncle(newNode);
+        bstNode *gramps = grandparent(newNode);
+        if(newNode == rbTree->tree->root) break;
+        if(color(parental) == 'B') break;
+        if(color(uncs) == 'R') {
+          ((rbtval*)parental->value)->color = 'B';
+          ((rbtval*)uncs->value)->color = 'B';
+          ((rbtval*)gramps->value)->color ='R';
+          newNode = gramps;
+        }
+        else {
+          //printf("\n Current Tree form: \n");
+          //displayRBT(stdout, rbTree);
+          //printf("\n");
+          if(isLinear(newNode) == 0) {
+            bstNode *oldnode = newNode;
+            bstNode *oldparent = parental;
+            if(isleftChild(newNode)) rightRotate(rbTree, newNode, parental);
+            else leftRotate(rbTree, newNode, parental);
+            newNode = oldparent;
+            parental = oldnode;
+          }
+          ((rbtval*)parental->value)->color = 'B';
+          ((rbtval*)gramps->value)->color = 'R';
+          if(isleftChild(parental)) rightRotate(rbTree,parental,gramps);
+          else leftRotate(rbTree, parental, gramps);
+          break;
+        }
       }
-      ((rbtval*)newNode->parent->value)->color = 'B';
-      ((rbtval*)(grandparent(newNode))->value)->color = 'R';
-      if(newNode->parent == rbTree->tree->root) break;
-      if(isleftChild(newNode->parent)) rightRotate(rbTree,newNode->parent,newNode->parent->parent);
-      else leftRotate(rbTree, newNode->parent, newNode->parent->parent);
-      break;
-    }
-    ((rbtval*)(rbTree->tree->root->value))->color = 'B';
+      ((rbtval*)rbTree->tree->root->value)->color = 'B';
+      //printf("\n Current Tree form: \n");
+      //displayRBT(stdout, rbTree);
+      //printf("\n");
   }
 }
 

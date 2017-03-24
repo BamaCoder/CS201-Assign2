@@ -25,7 +25,7 @@ extern bstNode *insertBST(bst *,void *);
 extern int findBST(bst *,void *);
 extern bstNode *findBSTNode(bst *,void *);
 extern bstNode *swapToLeafBSTNode(bstNode *);
-extern void pruneBSTNode(bstNode *);
+extern void pruneBSTNode(bst *, bstNode *);
 extern void statisticsBST(bst *,FILE *);
 extern void displayBST(FILE *,bst *);
 extern void checkBST(bst *);                //optional

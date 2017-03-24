@@ -33,7 +33,8 @@ bstNode *insertBST(bst *tree,void *value) {
   }
   else {
     while(1) {
-      if(tree->compare(newnode->value, curnode->value) <  0 ) {
+      int valComp = tree->compare(newnode->value, curnode->value);
+      if(valComp <  0 ) {
         if(curnode->left == 0) {
           curnode->left = newnode;
           newnode->parent = curnode;
@@ -58,10 +59,19 @@ int findBST(bst *tree,void *value) {
   bstNode *curnode = tree->root;
   if(curnode == 0) return 0;
   while(1) {
-    if(tree->compare(value,curnode->value) == 0)  return 1;
-    else if  (tree->compare(value,curnode->value) < 0) curnode = curnode->left;
-    else curnode = curnode->right;
-    if(curnode == 0) return 0;
+    if(tree->compare(value,curnode->value)==0) return 1;
+    else if (tree->compare(value,curnode->value) < 0)  {
+        if(curnode->left == 0)
+            return 0;
+        else
+            curnode = curnode->left;
+    }
+    else {
+        if(curnode->right == 0)
+            return 0;
+        else
+            curnode = curnode->right;
+    }
   }
 }
 
@@ -69,10 +79,20 @@ bstNode *findBSTNode(bst *tree,void *value) {
   bstNode *curnode = tree->root;
   if(curnode == 0) return 0;
   while(1) {
-    if(tree->compare(value,curnode->value)==0) return curnode;
-    else if (tree->compare(value,curnode->value) < 0) curnode = curnode->left;
-    else curnode = curnode->right;
-    if(curnode == 0) return 0;
+    int notEqual = tree->compare(value,curnode->value);
+    if(notEqual == 0) return curnode;
+    else if (notEqual < 0)  {
+        if(curnode->left == 0)
+            return 0;
+        else
+            curnode = curnode->left;
+    }
+    else {
+        if(curnode->right == 0)
+            return 0;
+        else
+            curnode = curnode->right;
+    }
   }
 }
 
@@ -101,24 +121,21 @@ bstNode *swapToLeafBSTNode(bstNode *n){
   }
 }
 
-void pruneBSTNode(bstNode *n) {
+void pruneBSTNode(bst *tree, bstNode *n) {
   if((n->parent->left == 0 && n->parent->right == 0)) {
     n = 0;
-    free(n);
   }
   else if(n->left == 0 && n->right == 0) {
     if(n == n->parent->left) {
       n->parent->left = 0;
-      free(n->parent->left);
     }
     else {
       n->parent->right = 0;
-      free(n->parent->right);
     }
   }
   else {
     n = swapToLeafBSTNode(n);
-    pruneBSTNode(n);
+    pruneBSTNode(tree, n);
   }
 }
 
@@ -129,7 +146,6 @@ void statisticsBST(bst *tree,FILE *fp) {
   if(tree->root != 0) {
     enqueue(q, tree->root);
     while(sizeQueue(q)) {
-      lev++;
       for(int i = 0, n = sizeQueue(q); i < n; i++) {
         bstNode *iter = peekQueue(q);
         if(lowestLeaf && (iter->left == 0 && iter->right == 0)) {
@@ -142,6 +158,7 @@ void statisticsBST(bst *tree,FILE *fp) {
         if(iter->right != 0)
           enqueue(q, iter->right);
       }
+      lev++;
     }
     maxdepth = lev;
   }
@@ -157,26 +174,28 @@ void displayBST(FILE *fp,bst *tree) {
   queue *q = newQueue(tree->display);
   int lev = 0;
   enqueue(q, tree->root);
-  while(sizeQueue(q) > 0) {
-    fprintf(stdout, "%d : ", lev);
+  while(1) {
+    int n = sizeQueue(q);
+    fprintf(fp, "%d: ", lev);
     lev++;
-    int n;
-    n = sizeQueue(q);
-    for(int i = 0; i < n; i++) {
+    while(n > 0) {
       bstNode *iter = peekQueue(q);
       if(iter->left == 0 && iter->right == 0) fprintf(fp, "=");
-      tree->display(stdout, iter->value);
-      fprintf(stdout, "(");
-      tree->display(stdout, iter->parent->value);
-      fprintf(stdout, ")-");
-      if(iter->parent->left == iter) fprintf(stdout, "l");
-      else if(iter->parent->right == iter) fprintf(stdout, "r");
+      tree->display(fp, iter->value);
+      fprintf(fp, "(");
+      tree->display(fp, iter->parent->value);
+      fprintf(fp, ")-");
+      if(iter->parent->left == iter) fprintf(fp, "l");
+      else if(iter->parent->right == iter) fprintf(fp, "r");
       dequeue(q);
       if(iter->left  != 0)
         enqueue(q, iter->left);
       if(iter->right != 0)
         enqueue(q, iter->right);
+      n--;
+      if(n > 0) fprintf(fp, " ");
     }
-    fprintf(stdout, "\n");
+    fprintf(fp, "\n");
+    if(n == 0) break;
   }
 }
